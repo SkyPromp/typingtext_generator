@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-#define WORDS_AMOUNT 145 // make dynamic by using index
-#define MAX_WORD_LENGTH 100
 #define MIN_NUMBER_LENGTH 2
 #define MAX_NUMBER_LENGTH 5
 #define NUMBERS_RATIO 0.3
@@ -14,16 +12,22 @@ typedef enum text_type{
 	NUMBER
 } text_type;
 
+size_t getFileLines(char*, size_t*);
 int getNumber();
 char *getWord();
 text_type next();
-void outputData(char [][MAX_WORD_LENGTH]);
+void outputData(size_t max_word_length, char [][max_word_length], size_t);
 
 
 int main(){
 	srand(time(NULL));
-	FILE *fptr = fopen("words.txt", "r");
-	char words[WORDS_AMOUNT][MAX_WORD_LENGTH];
+	char *file_name = "words.txt";
+	size_t MAX_WORD_LENGTH = 0;
+	const size_t FILE_LINES = getFileLines(file_name, &MAX_WORD_LENGTH);
+	MAX_WORD_LENGTH++;
+
+	FILE *fptr = fopen(file_name, "r");
+	char words[FILE_LINES][MAX_WORD_LENGTH];
 	char word[MAX_WORD_LENGTH];
 	size_t index = 0;
 
@@ -35,15 +39,36 @@ int main(){
 	}
 
 	for(int i = 0; i < TOKENS - 1; i++) {
-		outputData(words);
+		outputData(MAX_WORD_LENGTH, words, FILE_LINES);
 		putchar(' ');
 	}
 
-	outputData(words);
+	outputData(MAX_WORD_LENGTH, words, FILE_LINES);
 
 	fclose(fptr);
 
 	return 0;
+}
+
+size_t getFileLines(char* file_name, size_t *max_word_length){
+	FILE *fptr = fopen(file_name, "r");
+	const size_t MAX_BUFFER_SIZE = 100; // bigger than max word length
+	char word[MAX_BUFFER_SIZE]; // overshoot max word length
+	size_t index = 0;
+
+	while(fgets(word, MAX_BUFFER_SIZE, fptr)){ 
+		size_t word_length = strlen(word);
+		if (word_length > *max_word_length) *max_word_length = word_length;
+
+		word[strcspn(word, "\n")] = 0; // Remove newline at the end of word
+		if (!*word) break;
+		
+		index++;
+	}
+
+	fclose(fptr);
+
+	return index;
 }
 
 int getNumber(){
@@ -75,13 +100,13 @@ text_type next(){
 	return NUMBER;
 }
 
-void outputData(char words[][MAX_WORD_LENGTH]){
+void outputData(size_t max_word_length, char words[][max_word_length], size_t words_amount){
 	int token = next();
 
 	switch (token){
 		case WORD:
 
-			printf("%s", words[rand() % WORDS_AMOUNT]);
+			printf("%s", words[rand() % words_amount]);
 			break;
 		case NUMBER:
 			printf("%d", getNumber());
